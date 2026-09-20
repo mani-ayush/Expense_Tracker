@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker & Financial Analytics</title>
+    <!-- Tailwind CSS CDN with dark mode support -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        food: '#10b981',
+                        household: '#0284c7',
+                        transport: '#f59e0b',
+                        school: '#8b5cf6',
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Lucide Icons CDN -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 antialiased min-h-screen flex flex-col transition-colors duration-200">
+
+    <!-- Navbar -->
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-30 shadow-sm transition-colors duration-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-md shadow-blue-200 dark:shadow-none">
+                    <i data-lucide="wallet" class="w-5 h-5"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-900 dark:text-white leading-tight flex items-center space-x-2">
+                        <span>Expense Tracker Pro</span>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-200 dark:border-blue-800">v2.0</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Financial Intelligence & Budget Tracker</p>
+                </div>
+            </div>
+
+            <!-- Header Controls: Currency, Theme Switch, Imports/Exports, Add -->
+            <div class="flex items-center space-x-2">
+                <!-- Currency Selector -->
+                <div class="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl px-2 py-1 border border-slate-200 dark:border-slate-700">
+                    <span class="text-xs text-slate-500 dark:text-slate-400 mr-1 hidden sm:inline">Currency:</span>
+                    <select id="currencySelect" onchange="changeCurrency(this.value)" class="bg-transparent text-xs font-bold text-slate-700 dark:text-slate-200 focus:outline-none cursor-pointer">
+                        <option value="Rs" class="dark:bg-slate-800">Rs (INR)</option>
+                        <option value="$" class="dark:bg-slate-800">$ (USD)</option>
+                        <option value="€" class="dark:bg-slate-800">€ (EUR)</option>
+                        <option value="£" class="dark:bg-slate-800">£ (GBP)</option>
+                        <option value="¥" class="dark:bg-slate-800">¥ (JPY)</option>
+                        <option value="AED" class="dark:bg-slate-800">AED</option>
+                    </select>
+                </div>
+
+                <!-- Theme Toggle Button -->
+                <button id="themeToggleBtn" onclick="toggleTheme()" class="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 transition" title="Toggle Theme (Dark / Light)">
+                    <i id="themeIcon" data-lucide="moon" class="w-4 h-4"></i>
+                </button>
+
+                <!-- Import CSV -->
+                <button onclick="openImportModal()" class="hidden md:flex px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 transition items-center space-x-1.5">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    <span>Import</span>
+                </button>
+
+                <!-- Export Dropdown -->
+                <div class="relative group">
+                    <button class="px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5">
+                        <i data-lucide="download" class="w-4 h-4"></i>
+                        <span class="hidden sm:inline">Export</span>
+                        <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i>
+                    </button>
+                    <div class="absolute right-0 mt-1 w-52 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-xl hidden group-hover:block z-40 py-1.5 text-xs">
+                        <a href="/api/export/csv?type=all" class="block px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium">Download All (CSV)</a>
+                        <a href="/api/export/csv?type=daily" class="block px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium">Daily Summary (CSV)</a>
+                        <a href="/api/export/csv?type=weekly" class="block px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 font-medium">Weekly Summary (CSV)</a>
+                        <div class="border-t border-slate-100 dark:border-slate-800 my-1"></div>
+                        <a href="/api/export/jpeg?type=daily" class="block px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-blue-600 dark:text-blue-400 font-medium flex items-center justify-between">
+                            <span>Daily Chart</span>
+                            <span class="text-[10px] bg-blue-50 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded font-bold">JPEG</span>
+                        </a>
+                        <a href="/api/export/jpeg?type=weekly" class="block px-4 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-purple-600 dark:text-purple-400 font-medium flex items-center justify-between">
+                            <span>Weekly Chart</span>
+                            <span class="text-[10px] bg-purple-50 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 px-1.5 py-0.5 rounded font-bold">JPEG</span>
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Add Expense Button -->
+                <button onclick="openAddModal()" class="px-3.5 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm shadow-blue-300 dark:shadow-none transition flex items-center space-x-1.5">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    <span>Add Expense</span>
+                    <span class="hidden sm:inline text-[10px] bg-blue-500/50 px-1.5 py-0.2 rounded font-mono text-blue-100">N</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- KPI Summary Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Total Expense -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm relative overflow-hidden transition-colors">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Expenses</span>
+                    <span class="p-2 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-xl">
+                        <i data-lucide="banknote" class="w-5 h-5"></i>
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <span class="text-2xl font-black text-slate-900 dark:text-white" id="kpi-total">Rs 0.00</span>
+                </div>
+                <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Cumulative all-time spending</p>
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-blue-50 dark:bg-blue-950/30 rounded-full pointer-events-none opacity-50"></div>
+            </div>
+
+            <!-- Today's Expense -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm relative overflow-hidden transition-colors">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Today's Expense</span>
+                    <span class="p-2 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 rounded-xl">
+                        <i data-lucide="calendar-check" class="w-5 h-5"></i>
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <span class="text-2xl font-black text-slate-900 dark:text-white" id="kpi-today">Rs 0.00</span>
+                </div>
+                <p class="mt-1 text-xs text-slate-400 dark:text-slate-500" id="today-date-label">Today</p>
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-emerald-50 dark:bg-emerald-950/30 rounded-full pointer-events-none opacity-50"></div>
+            </div>
+
+            <!-- This Week's Expense -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm relative overflow-hidden transition-colors">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">This Week</span>
+                    <span class="p-2 bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 rounded-xl">
+                        <i data-lucide="trending-up" class="w-5 h-5"></i>
+                    </span>
+                </div>
+                <div class="mt-3">
+                    <span class="text-2xl font-black text-slate-900 dark:text-white" id="kpi-week">Rs 0.00</span>
+                </div>
+                <p class="mt-1 text-xs text-slate-400 dark:text-slate-500">Current week spending</p>
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-amber-50 dark:bg-amber-950/30 rounded-full pointer-events-none opacity-50"></div>
+            </div>
+
+            <!-- Transactions Count & Average -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm relative overflow-hidden transition-colors">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Transactions</span>
+                    <span class="p-2 bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 rounded-xl">
+                        <i data-lucide="receipt" class="w-5 h-5"></i>
+                    </span>
+                </div>
+                <div class="mt-3 flex items-baseline justify-between">
+                    <span class="text-2xl font-black text-slate-900 dark:text-white" id="kpi-transactions">0</span>
+                    <span class="text-xs font-bold text-slate-500 dark:text-slate-400" id="kpi-avg">Avg: Rs 0</span>
+                </div>
+                <p class="mt-1 text-xs text-slate-400 dark:text-slate-500" id="kpi-top-cat">Top Category: -</p>
+                <div class="absolute -right-6 -bottom-6 w-24 h-24 bg-purple-50 dark:bg-purple-950/30 rounded-full pointer-events-none opacity-50"></div>
+            </div>
+        </div>
+
+        <!-- NEW FEATURE: Monthly Budget Tracker Card -->
+        <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm transition-colors">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-3">
+                <div class="flex items-center space-x-2">
+                    <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                        <i data-lucide="target" class="w-4 h-4"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Monthly Budget Goal</h3>
+                        <p class="text-xs text-slate-400 dark:text-slate-500">Track and manage your spending limit for this month</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    <div class="text-right">
+                        <div class="text-xs text-slate-500 dark:text-slate-400">Spent / Budget:</div>
+                        <div class="text-sm font-black text-slate-800 dark:text-slate-200" id="budgetValuesText">Rs 0 / Rs 25,000</div>
+                    </div>
+                    <button onclick="openBudgetModal()" class="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1">
+                        <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                        <span>Set Budget</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden">
+                <div id="budgetProgressBar" class="bg-emerald-500 h-3 rounded-full transition-all duration-500 ease-out" style="width: 0%"></div>
+            </div>
+
+            <div class="flex items-center justify-between mt-2 text-xs">
+                <span id="budgetPercentageText" class="font-bold text-emerald-600 dark:text-emerald-400">0% Used</span>
+                <span id="budgetRemainingText" class="text-slate-500 dark:text-slate-400">Rs 25,000 remaining</span>
+            </div>
+        </div>
+
+        <!-- Tab Controls & Quick Actions -->
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-3">
+            <div class="flex space-x-2 flex-wrap gap-y-2">
+                <button id="tab-btn-expenses" onclick="switchTab('expenses')" class="tab-btn active px-4 py-2 text-sm font-semibold rounded-xl bg-blue-600 text-white shadow-sm flex items-center space-x-2">
+                    <i data-lucide="list" class="w-4 h-4"></i>
+                    <span>All Expenses</span>
+                </button>
+                <button id="tab-btn-analytics" onclick="switchTab('analytics')" class="tab-btn px-4 py-2 text-sm font-semibold rounded-xl bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 flex items-center space-x-2">
+                    <i data-lucide="pie-chart" class="w-4 h-4"></i>
+                    <span>Reports & Analytics</span>
+                </button>
+                <button id="tab-btn-ai" onclick="switchTab('ai')" class="tab-btn px-4 py-2 text-sm font-semibold rounded-xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 hover:from-indigo-500/20 hover:to-purple-500/20 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 flex items-center space-x-2 transition">
+                    <i data-lucide="sparkles" class="w-4 h-4 text-indigo-600 dark:text-indigo-400 animate-pulse"></i>
+                    <span>FinWise AI & Wealth Advisor</span>
+                    <span class="text-[10px] bg-indigo-600 text-white font-bold px-1.5 py-0.5 rounded-full">AI</span>
+                </button>
+            </div>
+
+            <!-- Quick Add Categories Bar -->
+            <div class="flex items-center space-x-1.5 flex-wrap">
+                <span class="text-xs font-medium text-slate-500 dark:text-slate-400 mr-1">Quick Add:</span>
+                <button onclick="quickAdd('FOOD')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900 border border-emerald-200 dark:border-emerald-800 transition">
+                    🍔 Food
+                </button>
+                <button onclick="quickAdd('HOUSEHOLD')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900 border border-sky-200 dark:border-sky-800 transition">
+                    🏠 Household
+                </button>
+                <button onclick="quickAdd('TRANSPORTATION')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900 border border-amber-200 dark:border-amber-800 transition">
+                    🚗 Transport
+                </button>
+                <button onclick="quickAdd('SCHOOL FEE')" class="px-2.5 py-1 text-xs font-semibold rounded-lg bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900 border border-purple-200 dark:border-purple-800 transition">
+                    🎓 School Fee
+                </button>
+            </div>
+        </div>
+
+        <!-- TAB 1: Expenses Table Section -->
+        <div id="tab-content-expenses" class="space-y-4">
+            <!-- Search & Quick Range Filter Bar -->
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 transition-colors">
+                <div class="relative w-full md:w-72">
+                    <i data-lucide="search" class="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                    <input type="text" id="searchInput" oninput="filterExpenses()" placeholder="Search item or category..." class="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+
+                <!-- Date Range Pills -->
+                <div class="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl text-xs">
+                    <button id="range-pill-all" onclick="setQuickRange('ALL')" class="range-pill px-2.5 py-1 rounded-lg font-bold bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-xs">All</button>
+                    <button id="range-pill-today" onclick="setQuickRange('TODAY')" class="range-pill px-2.5 py-1 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">Today</button>
+                    <button id="range-pill-week" onclick="setQuickRange('WEEK')" class="range-pill px-2.5 py-1 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">This Week</button>
+                    <button id="range-pill-month" onclick="setQuickRange('MONTH')" class="range-pill px-2.5 py-1 rounded-lg text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">This Month</button>
+                </div>
+
+                <div class="flex items-center space-x-2 w-full md:w-auto flex-wrap gap-y-2">
+                    <select id="categoryFilter" onchange="filterExpenses()" class="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <option value="ALL">All Categories</option>
+                        <option value="FOOD">Food</option>
+                        <option value="HOUSEHOLD">Household</option>
+                        <option value="TRANSPORTATION">Transportation</option>
+                        <option value="SCHOOL FEE">School Fee</option>
+                    </select>
+
+                    <input type="date" id="dateFilter" onchange="filterExpenses()" class="px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-700 dark:text-slate-200 font-medium focus:ring-2 focus:ring-blue-500 focus:outline-none">
+
+                    <button onclick="clearFilters()" class="px-3 py-2 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 transition">
+                        Reset
+                    </button>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden transition-colors">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50/80 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                                <th class="py-3.5 px-5">Date</th>
+                                <th class="py-3.5 px-5">Good / Service</th>
+                                <th class="py-3.5 px-5">Category</th>
+                                <th class="py-3.5 px-5 text-right">Price</th>
+                                <th class="py-3.5 px-5 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="expensesTableBody" class="divide-y divide-slate-100 dark:divide-slate-800/80 text-xs">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Empty State -->
+                <div id="emptyState" class="py-12 px-4 text-center hidden">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 mx-auto flex items-center justify-center mb-3">
+                        <i data-lucide="inbox" class="w-6 h-6"></i>
+                    </div>
+                    <h3 class="font-semibold text-slate-700 dark:text-slate-300 text-sm">No expenses found</h3>
+                    <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Add your first expense or clear search filters to get started.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: Reports & Analytics Section -->
+        <div id="tab-content-analytics" class="hidden space-y-6">
+            <!-- Action / Export Strip -->
+            <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm flex flex-col md:flex-row items-center justify-between gap-3 transition-colors">
+                <div>
+                    <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Visual Reports & Exports</h3>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">Generate high-resolution charts and CSV summaries matching backend requirements.</p>
+                </div>
+                <div class="flex items-center space-x-2 flex-wrap gap-y-2">
+                    <a href="/api/export/jpeg?type=daily" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 hover:bg-blue-100 dark:hover:bg-blue-900 border border-blue-200 dark:border-blue-800 transition flex items-center space-x-1.5">
+                        <i data-lucide="image" class="w-4 h-4"></i>
+                        <span>Save Daily Chart (JPEG)</span>
+                    </a>
+                    <a href="/api/export/jpeg?type=weekly" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-300 hover:bg-purple-100 dark:hover:bg-purple-900 border border-purple-200 dark:border-purple-800 transition flex items-center space-x-1.5">
+                        <i data-lucide="pie-chart" class="w-4 h-4"></i>
+                        <span>Save Weekly Chart (JPEG)</span>
+                    </a>
+                    <a href="/api/export/csv?type=daily" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        <span>Daily CSV</span>
+                    </a>
+                    <a href="/api/export/csv?type=weekly" class="px-3.5 py-2 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5">
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
+                        <span>Weekly CSV</span>
+                    </a>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Daily Expenses Chart -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Daily Expenses</h4>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">Spending per day (Bar chart)</p>
+                        </div>
+                        <span class="text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 px-2 py-0.5 rounded-full">Daily</span>
+                    </div>
+                    <div class="relative h-64">
+                        <canvas id="dailyChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Category Expenses Breakdown -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Category Breakdown</h4>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">Distribution across categories (Doughnut chart)</p>
+                        </div>
+                        <span class="text-[10px] font-bold bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-full">Weekly / Category</span>
+                    </div>
+                    <div class="relative h-64">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Breakdown Tables -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Daily Breakdown Table -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden transition-colors">
+                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
+                        <h4 class="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">Daily Spending Summary</h4>
+                    </div>
+                    <div class="max-h-60 overflow-y-auto">
+                        <table class="w-full text-xs">
+                            <tbody id="dailySummaryBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Weekly Breakdown Table -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800/80 shadow-sm overflow-hidden transition-colors">
+                    <div class="px-5 py-4 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
+                        <h4 class="font-bold text-slate-800 dark:text-slate-200 text-xs uppercase tracking-wider">Weekly Spending Summary</h4>
+                    </div>
+                    <div class="max-h-60 overflow-y-auto">
+                        <table class="w-full text-xs">
+                            <tbody id="weeklySummaryBody" class="divide-y divide-slate-100 dark:divide-slate-800">
+                                <!-- Populated via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: FinWise AI & Wealth Advisory Section -->
+        <div id="tab-content-ai" class="hidden space-y-6">
+            
+            <!-- AI Header Banner -->
+            <div class="bg-gradient-to-r from-indigo-900 via-purple-900 to-slate-900 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                <div class="relative z-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+                    <div class="space-y-1">
+                        <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-indigo-500/30 border border-indigo-400/30 text-indigo-200 text-xs font-semibold backdrop-blur-sm">
+                            <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-300 animate-spin"></i>
+                            <span>FinWise AI Intelligence Engine</span>
+                        </div>
+                        <h2 class="text-xl md:text-2xl font-black tracking-tight">FinWise AI Wealth Engine & Peer Analytics</h2>
+                        <p class="text-xs text-indigo-200/80 max-w-xl">
+                            Autonomous fiscal intelligence analyzing month-over-month trajectory, benchmarking against thousands of peer profiles, and generating optimized wealth deployment into Gold, Infrastructure, and Equity markets.
+                        </p>
+                    </div>
+
+                    <!-- AI Surplus Indicator -->
+                    <div class="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/10 text-right min-w-[200px]">
+                        <div class="text-[11px] uppercase tracking-wider text-indigo-200 font-semibold">Available Monthly Surplus</div>
+                        <div class="text-2xl font-black text-emerald-400" id="aiSurplusHeader">Rs 0</div>
+                        <div class="text-[10px] text-indigo-200/70">Unspent from budget allocation</div>
+                    </div>
+                </div>
+
+                <!-- Subtle Decorative Background Circles -->
+                <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-purple-500/20 rounded-full blur-2xl pointer-events-none"></div>
+                <div class="absolute left-1/2 -top-10 w-48 h-48 bg-indigo-500/20 rounded-full blur-2xl pointer-events-none"></div>
+            </div>
+
+            <!-- Dynamic AI Smart Insights Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="aiInsightsContainer">
+                <!-- Populated dynamically via JS -->
+            </div>
+
+            <!-- Row 1: Month-over-Month & Peer Benchmarking Analysis -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- 1. Month-over-Month Comparative Analytics -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="p-2 bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 rounded-xl font-bold">
+                                <i data-lucide="git-compare" class="w-4 h-4"></i>
+                            </span>
+                            <div>
+                                <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Month-over-Month Velocity</h4>
+                                <p class="text-xs text-slate-400 dark:text-slate-500">Current vs. Previous Month trajectory</p>
+                            </div>
+                        </div>
+                        <span id="momDeltaBadge" class="text-xs font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            Loading...
+                        </span>
+                    </div>
+
+                    <!-- Comparison Spend Boxes -->
+                    <div class="grid grid-cols-2 gap-3 mb-4">
+                        <div class="bg-slate-50 dark:bg-slate-800/60 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800">
+                            <span class="text-[11px] font-semibold text-slate-400 uppercase tracking-wider" id="momPrevLabel">Previous Month</span>
+                            <div class="text-lg font-black text-slate-700 dark:text-slate-300 mt-1" id="momPrevVal">Rs 0</div>
+                        </div>
+                        <div class="bg-blue-50/50 dark:bg-blue-950/30 p-3.5 rounded-xl border border-blue-100 dark:border-blue-900/50">
+                            <span class="text-[11px] font-semibold text-blue-600 dark:text-blue-400 uppercase tracking-wider" id="momCurLabel">Current Month</span>
+                            <div class="text-lg font-black text-blue-700 dark:text-blue-300 mt-1" id="momCurVal">Rs 0</div>
+                        </div>
+                    </div>
+
+                    <!-- Category Level Delta Breakdown -->
+                    <div class="space-y-2">
+                        <h5 class="text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Category Shift Analysis</h5>
+                        <div id="momCategoryList" class="space-y-2 text-xs">
+                            <!-- Populated via JS -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. Peer Benchmarking Intelligence -->
+                <div class="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200/80 dark:border-slate-800/80 shadow-sm transition-colors">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-2">
+                            <span class="p-2 bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 rounded-xl font-bold">
+                                <i data-lucide="users" class="w-4 h-4"></i>
+                            </span>
+                            <div>
+                                <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Peer Community Benchmarking</h4>
+                                <p class="text-xs text-slate-400 dark:text-slate-500">How your spending % compares to average user profiles</p>
+                            </div>
+                        </div>
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300">
+                            Cohort: Income Tier 1
+                        </span>
+                    </div>
+
+                    <!-- Benchmarks List with Progress Comparison -->
+                    <div id="peerBenchmarkList" class="space-y-4">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 2: AI Wealth & Investment Deployment Engine -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm transition-colors space-y-5">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
+                    <div class="flex items-center space-x-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-amber-50 dark:bg-amber-950/60 text-amber-600 dark:text-amber-400 flex items-center justify-center font-bold">
+                            <i data-lucide="landmark" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-900 dark:text-slate-100 text-base">Surplus Investment Advisor</h3>
+                            <p class="text-xs text-slate-400 dark:text-slate-500">Autonomous capital deployment into Gold, Infrastructure & Stocks</p>
+                        </div>
+                    </div>
+
+                    <!-- Risk Appetite Switcher -->
+                    <div class="flex items-center space-x-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                        <span class="text-xs text-slate-400 px-2 font-medium hidden sm:inline">Risk Profile:</span>
+                        <button onclick="changeRiskProfile('CONSERVATIVE')" id="risk-btn-conservative" class="risk-pill px-3 py-1 text-xs rounded-lg text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-white transition">
+                            🛡️ Conservative
+                        </button>
+                        <button onclick="changeRiskProfile('BALANCED')" id="risk-btn-balanced" class="risk-pill px-3 py-1 text-xs rounded-lg font-bold bg-white dark:bg-slate-700 text-blue-600 dark:text-white shadow-xs transition">
+                            ⚖️ Balanced
+                        </button>
+                        <button onclick="changeRiskProfile('AGGRESSIVE')" id="risk-btn-aggressive" class="risk-pill px-3 py-1 text-xs rounded-lg text-slate-500 dark:text-slate-400 font-medium hover:text-slate-900 dark:hover:text-white transition">
+                            🚀 Aggressive
+                        </button>
+                    </div>
+                </div>
+
+                <!-- AI Allocation Rationale Banner -->
+                <div class="bg-indigo-50/60 dark:bg-indigo-950/30 border border-indigo-100 dark:border-indigo-900/50 rounded-xl p-4 flex items-start space-x-3">
+                    <i data-lucide="brain-circuit" class="w-5 h-5 text-indigo-600 dark:text-indigo-400 mt-0.5 shrink-0"></i>
+                    <div>
+                        <h4 class="font-bold text-xs text-indigo-900 dark:text-indigo-200" id="aiStrategyTitle">Balanced Wealth & Growth Engine</h4>
+                        <p class="text-xs text-indigo-700/80 dark:text-indigo-300/80 mt-0.5" id="aiStrategyRationale">
+                            Optimizes for long-term purchasing power by balancing physical gold hedges with productive infrastructure REIT yields and equity index compounding.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- 4 Pillars of Investment: Gold, Infra, Stocks, Reserves Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="investmentCardsGrid">
+                    <!-- Populated dynamically via JS -->
+                </div>
+
+                <!-- 10-Year Compounding Wealth Forecast Box -->
+                <div class="bg-gradient-to-r from-slate-900 to-indigo-950 text-white rounded-2xl p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div class="flex items-center space-x-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 flex items-center justify-center font-bold">
+                            <i data-lucide="trending-up" class="w-5 h-5"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-sm">10-Year Compounding Wealth Projection</h4>
+                            <p class="text-xs text-slate-300">If you continuously invest your monthly budget surplus at ~12% blended CAGR</p>
+                        </div>
+                    </div>
+                    <div class="text-center sm:text-right">
+                        <span class="text-2xl font-black text-emerald-400" id="ai10YrProjectionVal">Rs 0</span>
+                        <div class="text-[10px] text-slate-400 uppercase tracking-wider">Projected Portfolio Value</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Row 3: Interactive Ask from AI Bot -->
+            <div class="bg-white dark:bg-slate-900 rounded-2xl p-6 border border-slate-200/80 dark:border-slate-800/80 shadow-sm transition-colors space-y-4">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                        <i data-lucide="bot" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Ask from AI Bot</h4>
+                        <p class="text-xs text-slate-400 dark:text-slate-500">Ask any question about your investments, budget optimization, or peer comparisons</p>
+                    </div>
+                </div>
+
+                <!-- Quick Prompt Chips -->
+                <div class="flex items-center space-x-2 flex-wrap gap-y-2">
+                    <span class="text-xs text-slate-400 mr-1">Quick Inquiries:</span>
+                    <button onclick="askAIQuick('Where should I invest my savings this month?')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition">
+                        🪙 Where to invest surplus?
+                    </button>
+                    <button onclick="askAIQuick('Compare my spending with other users taking percentages')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition">
+                        👥 Compare with peers
+                    </button>
+                    <button onclick="askAIQuick('How can I reduce expenses by 15%?')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition">
+                        📉 How to cut costs?
+                    </button>
+                    <button onclick="askAIQuick('Evaluate my spending health and burn rate')" class="px-3 py-1 rounded-lg text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 transition">
+                        💡 Financial Health Check
+                    </button>
+                </div>
+
+                <!-- Prompt Input Form -->
+                <form onsubmit="submitAIChat(event)" class="flex items-center space-x-2">
+                    <input type="text" id="aiChatInput" placeholder="Ask from AI Bot: e.g. How much gold should I accumulate this quarter?" class="flex-1 px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:outline-none">
+                    <button type="submit" id="aiSendBtn" class="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-xl text-xs flex items-center space-x-1.5 shadow-md shadow-indigo-200 dark:shadow-none transition">
+                        <span>Ask AI Bot</span>
+                        <i data-lucide="send" class="w-3.5 h-3.5"></i>
+                    </button>
+                </form>
+
+                <!-- AI Response Output Box -->
+                <div id="aiResponseBox" class="bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700/80 rounded-xl p-4 text-xs leading-relaxed text-slate-700 dark:text-slate-200 hidden">
+                    <div id="aiResponseContent" class="space-y-2 whitespace-pre-line font-sans">
+                        <!-- Populated via JS -->
+                    </div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </main>
+
+
+    <!-- ADD / EDIT EXPENSE MODAL -->
+    <div id="addModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800 overflow-hidden transform transition-all animate-fadeIn">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
+                        <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base" id="modalTitle">Add New Expense</h3>
+                </div>
+                <button onclick="closeAddModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="expenseForm" onsubmit="submitExpense(event)" class="p-6 space-y-4">
+                <input type="hidden" id="editIndex" value="-1">
+
+                <!-- Expense Type / Category Selector -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-2">Expense Category</label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <label class="cursor-pointer border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex items-center space-x-2 hover:border-emerald-500 has-[:checked]:border-emerald-500 has-[:checked]:bg-emerald-50/50 dark:has-[:checked]:bg-emerald-950/30 transition">
+                            <input type="radio" name="expense_type" value="FOOD" class="text-emerald-600 focus:ring-emerald-500" checked>
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">🍔 Food</span>
+                        </label>
+                        <label class="cursor-pointer border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex items-center space-x-2 hover:border-sky-500 has-[:checked]:border-sky-500 has-[:checked]:bg-sky-50/50 dark:has-[:checked]:bg-sky-950/30 transition">
+                            <input type="radio" name="expense_type" value="HOUSEHOLD" class="text-sky-600 focus:ring-sky-500">
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">🏠 Household</span>
+                        </label>
+                        <label class="cursor-pointer border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex items-center space-x-2 hover:border-amber-500 has-[:checked]:border-amber-500 has-[:checked]:bg-amber-50/50 dark:has-[:checked]:bg-amber-950/30 transition">
+                            <input type="radio" name="expense_type" value="TRANSPORTATION" class="text-amber-600 focus:ring-amber-500">
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">🚗 Transportation</span>
+                        </label>
+                        <label class="cursor-pointer border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 flex items-center space-x-2 hover:border-purple-500 has-[:checked]:border-purple-500 has-[:checked]:bg-purple-50/50 dark:has-[:checked]:bg-purple-950/30 transition">
+                            <input type="radio" name="expense_type" value="SCHOOL FEE" class="text-purple-600 focus:ring-purple-500">
+                            <span class="text-xs font-semibold text-slate-700 dark:text-slate-200">🎓 School Fee</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Good or Service -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">Good or Service Name</label>
+                    <input type="text" id="goodOrService" required placeholder="e.g., Grocery, Bus Ticket, Textbook" class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                </div>
+
+                <!-- Price and Date -->
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">Price (<span class="currency-label">Rs</span>)</label>
+                        <div class="relative">
+                            <span class="currency-label absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rs</span>
+                            <input type="number" id="priceInput" step="0.01" min="0.01" required placeholder="0.00" class="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">Date</label>
+                        <input type="date" id="dateInput" required class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="pt-2 flex items-center space-x-2">
+                    <button type="button" onclick="closeAddModal()" class="w-1/2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" id="saveBtn" class="w-1/2 py-2.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-200 dark:shadow-none transition">
+                        Save Expense
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- BUDGET SETTINGS MODAL -->
+    <div id="budgetModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800 overflow-hidden transform transition-all animate-fadeIn">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                        <i data-lucide="target" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base">Set Monthly Budget</h3>
+                </div>
+                <button onclick="closeBudgetModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form onsubmit="submitBudget(event)" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-600 dark:text-slate-300 uppercase mb-1">Target Limit (<span class="currency-label">Rs</span>)</label>
+                    <div class="relative">
+                        <span class="currency-label absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-xs">Rs</span>
+                        <input type="number" id="budgetLimitInput" step="100" min="100" required class="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">This sets the monthly goal benchmark on your dashboard.</p>
+                </div>
+
+                <div class="pt-2 flex items-center space-x-2">
+                    <button type="button" onclick="closeBudgetModal()" class="w-1/2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="w-1/2 py-2.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-200 dark:shadow-none transition">
+                        Update Budget
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- IMPORT CSV MODAL -->
+    <div id="importModal" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-800 overflow-hidden transform transition-all animate-fadeIn">
+            <div class="px-6 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <div class="w-8 h-8 rounded-lg bg-indigo-50 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400 flex items-center justify-center font-bold">
+                        <i data-lucide="upload" class="w-5 h-5"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800 dark:text-slate-100 text-base">Import Expenses CSV</h3>
+                </div>
+                <button onclick="closeImportModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="importForm" onsubmit="submitImport(event)" class="p-6 space-y-4">
+                <p class="text-xs text-slate-500 dark:text-slate-400">
+                    Upload a CSV containing: <code class="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-600 dark:text-blue-400">GOODS_OR_SERVICES</code>, <code class="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-600 dark:text-blue-400">PRICES</code>, <code class="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-600 dark:text-blue-400">DATES</code>, <code class="bg-slate-100 dark:bg-slate-800 px-1 py-0.5 rounded text-blue-600 dark:text-blue-400">EXPENSE_TYPE</code>.
+                </p>
+
+                <div class="border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-xl p-6 text-center hover:border-blue-400 transition bg-slate-50/50 dark:bg-slate-800/40 cursor-pointer">
+                    <input type="file" id="csvFileInput" accept=".csv" required class="w-full text-xs text-slate-500 dark:text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-50 dark:file:bg-blue-950 file:text-blue-700 dark:file:text-blue-300 hover:file:bg-blue-100">
+                </div>
+
+                <div class="pt-2 flex items-center space-x-2">
+                    <button type="button" onclick="closeImportModal()" class="w-1/2 py-2.5 text-xs font-semibold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition">
+                        Cancel
+                    </button>
+                    <button type="submit" class="w-1/2 py-2.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-md shadow-blue-200 dark:shadow-none transition">
+                        Upload & Load
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 transform transition-all duration-300 translate-y-20 opacity-0 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 text-xs font-medium px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-2">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400 dark:text-emerald-600"></i>
+        <span id="toastMessage">Success</span>
+    </div>
+
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
