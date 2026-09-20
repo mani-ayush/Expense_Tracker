@@ -15,9 +15,39 @@ backend.init_tracker()
 REPORTS_DIR = os.path.join(os.path.dirname(__file__), 'reports')
 os.makedirs(REPORTS_DIR, exist_ok=True)
 
+# ==========================================
+# PAGE ROUTES (Landing, Dashboard, Auth)
+# ==========================================
+
 @app.route('/')
-def index():
+def landing():
+    """Render the professional landing and feature showcase page."""
+    return render_template('landing.html')
+
+@app.route('/dashboard')
+def dashboard():
+    """Render the main expense tracker dashboard."""
     return render_template('index.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login_page():
+    """Render login page and preserve data on POST login."""
+    if request.method == 'POST':
+        return redirect(url_for('dashboard'))
+    return render_template('login.html')
+
+@app.route('/signup', methods=['GET', 'POST'])
+def signup_page():
+    """Render signup page and wipe sample data for a fresh start on POST."""
+    if request.method == 'POST':
+        backend.clear_all_data()
+        return redirect(url_for('dashboard'))
+    return render_template('signup.html')
+
+
+# ==========================================
+# EXPENSE MANAGEMENT & API ENDPOINTS
+# ==========================================
 
 @app.route('/api/expenses', methods=['GET'])
 def get_expenses():
@@ -130,27 +160,22 @@ def get_summary():
     weekly_totals = {}
 
     if not df.empty:
-        # Today's expense
         df_today = df[df['DATES'].dt.strftime('%Y-%m-%d') == today_str]
         today_expense = float(df_today['PRICES'].sum())
 
-        # This week's expense (last 7 days or current ISO week)
         start_of_week = datetime.now() - timedelta(days=datetime.now().weekday())
         start_of_week = start_of_week.replace(hour=0, minute=0, second=0, microsecond=0)
         df_this_week = df[df['DATES'] >= start_of_week]
         this_week_expense = float(df_this_week['PRICES'].sum())
 
-        # Category breakdown
         cat_series = backend.calculate_category_expense(df)
         category_totals = {k: float(v) for k, v in cat_series.items()}
 
-        # Daily breakdown (grouped by day, non-zero)
         daily_series = backend.calculate_daily_expense(df)
         for d, amt in daily_series.items():
             if amt > 0:
                 daily_totals[d.strftime('%Y-%m-%d')] = float(amt)
 
-        # Weekly breakdown
         weekly_series = backend.calculate_weekly_expense(df)
         for w, amt in weekly_series.items():
             if amt > 0:
@@ -232,6 +257,7 @@ def import_csv():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+
 # ==========================================
 # AI DRIVEN ANALYTICS & WEALTH ADVISORY APIS
 # ==========================================
@@ -280,7 +306,6 @@ def ai_advisor_query():
     comparison = backend.get_monthly_comparison(df)
     plan = backend.generate_ai_investment_suggestions(surplus, risk_profile)
 
-    # Intelligent financial AI bot responses
     if 'invest' in query or 'gold' in query or 'stock' in query or 'infra' in query or 'market' in query:
         response_text = (
             f"🤖 **FinWise AI Investment Bot Analysis:**\n\n"
@@ -329,4 +354,3 @@ def ai_advisor_query():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=False)
-

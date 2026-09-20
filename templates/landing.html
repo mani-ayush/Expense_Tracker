@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Expense Tracker Pro - Financial Intelligence Platform</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col justify-between antialiased">
+    <!-- Navbar -->
+    <header class="max-w-7xl w-full mx-auto px-6 py-6 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-white shadow-md">
+                <i data-lucide="wallet" class="w-5 h-5"></i>
+            </div>
+            <span class="font-bold text-lg text-slate-900 dark:text-white">Expense Tracker Pro</span>
+        </div>
+        <div class="flex items-center space-x-3">
+            <a href="/login" class="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-xl transition">Log In</a>
+            <a href="/signup" class="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition">Sign Up</a>
+        </div>
+    </header>
+
+    <!-- Hero Content -->
+    <main class="max-w-5xl mx-auto px-6 py-12 text-center space-y-10">
+        <!-- Professional Badge Craft -->
+        <div class="inline-flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 border border-blue-200 dark:border-blue-800 text-blue-600 dark:text-blue-400 text-xs font-bold shadow-xs">
+            <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+            <span>Next-Gen Fiscal Intelligence & AI Wealth Advisory</span>
+        </div>
+
+        <div class="space-y-4 max-w-3xl mx-auto">
+            <h1 class="text-4xl sm:text-5xl font-black text-slate-900 dark:text-white tracking-tight leading-tight">
+                Master Your Money with <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">Autonomous Precision</span>
+            </h1>
+            <p class="text-sm sm:text-base text-slate-500 dark:text-slate-400 leading-relaxed">
+                Seamlessly track daily expenses, visualize category breakdowns, benchmark your spending against peer cohorts, and deploy surplus capital into smart investments.
+            </p>
+        </div>
+
+        <!-- Action Grid / Explore Option -->
+        <div class="flex flex-col sm:flex-row items-center justify-center gap-4 pt-2">
+            <a href="/dashboard" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-lg shadow-blue-500/20 transition flex items-center justify-center space-x-2">
+                <i data-lucide="play-circle" class="w-4 h-4"></i>
+                <span>Explore App with Example Data</span>
+            </a>
+            <a href="/signup" class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-white dark:bg-slate-900 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-800 font-bold text-xs transition flex items-center justify-center space-x-2">
+                <i data-lucide="user-plus" class="w-4 h-4 text-blue-600"></i>
+                <span>Create Free Account</span>
+            </a>
+        </div>
+
+        <!-- Feature Details Section -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 pt-12 text-left">
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-emerald-600 flex items-center justify-center font-bold">
+                    <i data-lucide="pie-chart" class="w-5 h-5"></i>
+                </div>
+                <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Visual Analytics & Reports</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Instantly inspect daily bar graphs, category doughnut charts, and export reports directly to CSV or JPEG.</p>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-950 text-indigo-600 flex items-center justify-center font-bold">
+                    <i data-lucide="sparkles" class="w-5 h-5"></i>
+                </div>
+                <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm">FinWise AI Wealth Engine</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Evaluate budget pacing, compare allocation against peer benchmarks, and get optimized investment plans.</p>
+            </div>
+
+            <div class="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-3">
+                <div class="w-10 h-10 rounded-xl bg-amber-50 dark:bg-amber-950 text-amber-600 flex items-center justify-center font-bold">
+                    <i data-lucide="shield-check" class="w-5 h-5"></i>
+                </div>
+                <h3 class="font-bold text-slate-800 dark:text-slate-100 text-sm">Auto-Persistence & CRUD</h3>
+                <p class="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">Effortlessly add, search, edit, or delete transactions with instant local data persistence.</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="max-w-7xl w-full mx-auto px-6 py-6 text-center text-xs text-slate-400 border-t border-slate-200 dark:border-slate-800">
+        &copy; 2026 . All rights reserved.
+    </footer>
+
+    <script>
+        lucide.createIcons();
+    </script>
+</body>
+</html>

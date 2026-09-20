@@ -17,6 +17,16 @@ DAILY_EXPENSE_REPORTS = {}
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'expenses_data.csv')
 
+def clear_all_data():
+    """Clear all expenses from memory and storage for a fresh start."""
+    global GOODS_OR_SERVICES, PRICES, DATES, EXPENSE_TYPE
+    GOODS_OR_SERVICES.clear()
+    PRICES.clear()
+    DATES.clear()
+    EXPENSE_TYPE.clear()
+    if os.path.exists(DATA_FILE):
+        os.remove(DATA_FILE)
+
 def add_expense(good_or_service, price, date, expense_type, persist=True):
     """Add a new expense item and optionally save to CSV."""
     if isinstance(date, str):
@@ -30,7 +40,7 @@ def add_expense(good_or_service, price, date, expense_type, persist=True):
         auto_save()
 
 def edit_expense(index, good_or_service, price, date, expense_type):
-    """Edit an existing expense by index (Implements original Option 10/11)."""
+    """Edit an existing expense by index."""
     if 0 <= index < len(GOODS_OR_SERVICES):
         if isinstance(date, str):
             date = datetime.strptime(date, '%Y-%m-%d')
@@ -105,7 +115,6 @@ def save_data_to_jpeg(expense_report, title, filename):
     plt.style.use('seaborn-v0_8-whitegrid' if 'seaborn-v0_8-whitegrid' in plt.style.available else 'default')
     
     if 'WEEKLY' in title:
-        # Category/Weekly breakdown pie chart
         if 'EXPENSE_TYPE' in expense_report.columns:
             cat_totals = expense_report.groupby('EXPENSE_TYPE')['PRICES'].sum()
             labels = cat_totals.index
@@ -118,9 +127,7 @@ def save_data_to_jpeg(expense_report, title, filename):
         plt.pie(sizes, labels=labels, autopct='%1.1f%%', startangle=140, 
                 colors=colors[:len(sizes)], wedgeprops=dict(width=0.7, edgecolor='w'))
         plt.title(title, fontsize=14, pad=15, fontweight='bold')
-
     elif 'DAILY' in title:
-        # Daily bar chart
         if 'DATES' in expense_report.columns:
             daily_grouped = expense_report.groupby(pd.Grouper(key='DATES', freq='D'))['PRICES'].sum()
             daily_grouped = daily_grouped[daily_grouped > 0]
@@ -129,14 +136,12 @@ def save_data_to_jpeg(expense_report, title, filename):
         else:
             dates_formatted = [str(x) for x in expense_report.index]
             prices = expense_report['PRICES'].values
-
         bars = plt.bar(dates_formatted, prices, color='#3b82f6', edgecolor='#1d4ed8', width=0.55)
         plt.xlabel('Date', fontweight='bold', labelpad=8)
         plt.ylabel('Price (Rs)', fontweight='bold', labelpad=8)
         plt.xticks(rotation=45, ha='right')
         plt.title(title, fontsize=14, pad=15, fontweight='bold')
         
-        # Add value labels above bars
         for bar in bars:
             height = bar.get_height()
             if height > 0:
@@ -146,10 +151,8 @@ def save_data_to_jpeg(expense_report, title, filename):
                              textcoords="offset points",
                              ha='center', va='bottom', fontsize=9)
     else:
-        # General bar
         plt.bar(expense_report.index.astype(str), expense_report['PRICES'], color='#10b981')
         plt.title(title)
-
     plt.tight_layout()
     plt.savefig(filename, format='jpeg')
     plt.close()
@@ -168,7 +171,6 @@ def load_data_from_csv(filename):
         return None
     try:
         data = pd.read_csv(filename)
-        # Verify required columns
         required = {'GOODS_OR_SERVICES', 'PRICES', 'DATES', 'EXPENSE_TYPE'}
         if not required.issubset(set(data.columns)):
             return None
@@ -202,26 +204,20 @@ def init_tracker():
     if os.path.exists(DATA_FILE):
         load_data_from_csv(DATA_FILE)
     else:
-        # Load sample data if first time
         load_sample_data()
 
 def load_sample_data():
     """Populate realistic sample expenses spanning previous and current months."""
     today = datetime.now()
-    
-    # Calculate previous month date
     first_of_this_month = today.replace(day=1)
     last_month_end = first_of_this_month - pd.Timedelta(days=1)
     
     sample_items = [
-        # Previous Month Expenses (for MoM comparison)
         ("Monthly Grocery Supplies", 3800.0, (last_month_end - pd.Timedelta(days=15)).strftime('%Y-%m-%d'), "FOOD"),
         ("Electricity & Maintenance", 2600.0, (last_month_end - pd.Timedelta(days=12)).strftime('%Y-%m-%d'), "HOUSEHOLD"),
         ("Cab Rides & Metro Card", 950.0, (last_month_end - pd.Timedelta(days=10)).strftime('%Y-%m-%d'), "TRANSPORTATION"),
         ("School Semester Fee", 4000.0, (last_month_end - pd.Timedelta(days=5)).strftime('%Y-%m-%d'), "SCHOOL FEE"),
         ("Weekend Cafe & Dining", 1400.0, (last_month_end - pd.Timedelta(days=2)).strftime('%Y-%m-%d'), "FOOD"),
-        
-        # Current Month Expenses
         ("Supermarket Weekly Grocery", 850.0, (today - pd.Timedelta(days=4)).strftime('%Y-%m-%d'), "FOOD"),
         ("High-speed Fiber & Utility", 2400.0, (today - pd.Timedelta(days=3)).strftime('%Y-%m-%d'), "HOUSEHOLD"),
         ("Fuel & Metro Recharge", 650.0, (today - pd.Timedelta(days=2)).strftime('%Y-%m-%d'), "TRANSPORTATION"),
@@ -233,44 +229,26 @@ def load_sample_data():
         add_expense(good, price, dt, exp_type, persist=False)
     auto_save()
 
-# ==========================================
 # AI DRIVEN ANALYTICS & WEALTH ADVISORY
-# ==========================================
-
 def get_monthly_comparison(df=None):
-    """
-    Compare current month's expenses against the previous month.
-    Returns total spend delta %, category-level deltas, and direction.
-    """
     if df is None:
         df = get_expense_dataframe()
     if df.empty:
         return {'has_data': False}
-
     now = datetime.now()
     cur_year, cur_month = now.year, now.month
-    
-    # Previous month computation
     if cur_month == 1:
         prev_year, prev_month = cur_year - 1, 12
     else:
         prev_year, prev_month = cur_year, cur_month - 1
-
     df_cur = df[(df['DATES'].dt.year == cur_year) & (df['DATES'].dt.month == cur_month)]
     df_prev = df[(df['DATES'].dt.year == prev_year) & (df['DATES'].dt.month == prev_month)]
-
     cur_total = float(df_cur['PRICES'].sum())
     prev_total = float(df_prev['PRICES'].sum())
-
-    if prev_total > 0:
-        pct_change = round(((cur_total - prev_total) / prev_total) * 100, 1)
-    else:
-        pct_change = 0.0
-
-    # Category comparisons
+    pct_change = round(((cur_total - prev_total) / prev_total) * 100, 1) if prev_total > 0 else 0.0
+    
     cur_cat = df_cur.groupby('EXPENSE_TYPE')['PRICES'].sum().to_dict()
     prev_cat = df_prev.groupby('EXPENSE_TYPE')['PRICES'].sum().to_dict()
-
     cat_comparison = {}
     all_cats = set(cur_cat.keys()).union(set(prev_cat.keys()))
     for cat in all_cats:
@@ -283,7 +261,6 @@ def get_monthly_comparison(df=None):
             'diff_pct': diff_pct,
             'direction': 'UP' if diff_pct > 0 else ('DOWN' if diff_pct < 0 else 'FLAT')
         }
-
     return {
         'has_data': True,
         'current_month_name': now.strftime('%B %Y'),
@@ -296,69 +273,40 @@ def get_monthly_comparison(df=None):
     }
 
 def get_peer_benchmarking(df=None):
-    """
-    Benchmark user's spending allocation percentages against peer community averages.
-    """
     if df is None:
         df = get_expense_dataframe()
     if df.empty:
         return []
-
     total_spent = df['PRICES'].sum()
     if total_spent <= 0:
         return []
-
     cat_totals = df.groupby('EXPENSE_TYPE')['PRICES'].sum()
-    
-    # Standard consumer benchmark distributions (based on 50/30/20 financial averages)
     peer_benchmarks = {
-        'FOOD': 32.0,            # Typical peer spends ~32% on food/groceries
-        'HOUSEHOLD': 34.0,       # Typical peer spends ~34% on rent/bills/home
-        'TRANSPORTATION': 16.0,  # Typical peer spends ~16% on commute
-        'SCHOOL FEE': 18.0       # Typical peer spends ~18% on education/upskilling
+        'FOOD': 32.0,
+        'HOUSEHOLD': 34.0,
+        'TRANSPORTATION': 16.0,
+        'SCHOOL FEE': 18.0
     }
-
     results = []
     for cat, peer_pct in peer_benchmarks.items():
         user_amt = float(cat_totals.get(cat, 0.0))
         user_pct = round((user_amt / total_spent) * 100, 1)
         variance = round(user_pct - peer_pct, 1)
-        
-        # Determine status
         if variance > 5.0:
-            status = 'Overspending'
-            color = 'amber'
-            badge = f"+{variance}% higher than peers"
+            status, color, badge = 'Overspending', 'amber', f"+{variance}% higher than peers"
         elif variance < -5.0:
-            status = 'Super Saver'
-            color = 'emerald'
-            badge = f"{abs(variance)}% leaner than peers"
+            status, color, badge = 'Super Saver', 'emerald', f"{abs(variance)}% leaner than peers"
         else:
-            status = 'Balanced'
-            color = 'blue'
-            badge = "Matches peer standard"
-
+            status, color, badge = 'Balanced', 'blue', "Matches peer standard"
         results.append({
-            'category': cat,
-            'user_pct': user_pct,
-            'peer_pct': peer_pct,
-            'variance': variance,
-            'status': status,
-            'color': color,
-            'badge': badge
+            'category': cat, 'user_pct': user_pct, 'peer_pct': peer_pct,
+            'variance': variance, 'status': status, 'color': color, 'badge': badge
         })
-
     return results
 
 def generate_ai_investment_suggestions(surplus_amount, risk_profile='BALANCED'):
-    """
-    Generate an AI-driven investment allocation for saved/surplus budget:
-    Allocates across Gold, Infrastructure/REITs, Stock Market, and Emergency Reserves.
-    """
     surplus = max(0.0, float(surplus_amount))
     risk = (risk_profile or 'BALANCED').upper()
-
-    # Asset allocation models based on risk appetite
     if risk == 'CONSERVATIVE':
         strategy_name = "Capital Preservation & Inflation Hedge"
         weights = {
@@ -367,7 +315,7 @@ def generate_ai_investment_suggestions(surplus_amount, risk_profile='BALANCED'):
             'STOCKS': {'pct': 20, 'title': 'Nifty 50 Index Fund & Blue-Chips', 'cagr': '12-14%', 'icon': 'trending-up', 'risk': 'Medium'},
             'EMERGENCY': {'pct': 25, 'title': 'Liquid Funds / High-Yield Savings', 'cagr': '6.5-7.5%', 'icon': 'shield-check', 'risk': 'Very Low'}
         }
-        ai_summary = "Prioritizes capital safety with substantial gold and high-grade infrastructure debt to hedge inflation while generating stable cashflow."
+        ai_summary = "Prioritizes capital safety with substantial gold and high-grade infrastructure debt."
     elif risk == 'AGGRESSIVE':
         strategy_name = "Aggressive Wealth Compounding"
         weights = {
@@ -376,8 +324,8 @@ def generate_ai_investment_suggestions(surplus_amount, risk_profile='BALANCED'):
             'STOCKS': {'pct': 65, 'title': 'Equities, Flexi-Cap & Mid-Cap Growth', 'cagr': '14-18%', 'icon': 'trending-up', 'risk': 'High'},
             'EMERGENCY': {'pct': 10, 'title': 'Liquid Emergency Cushion', 'cagr': '6.5-7.5%', 'icon': 'shield-check', 'risk': 'Very Low'}
         }
-        ai_summary = "Maximizes equity exposure in high-growth index and mid-cap funds, targeting exponential compounding over a 5-10 year horizon."
-    else:  # BALANCED
+        ai_summary = "Maximizes equity exposure in high-growth index and mid-cap funds."
+    else:
         strategy_name = "Balanced Wealth & Growth Engine"
         weights = {
             'GOLD': {'pct': 15, 'title': 'Digital Gold & Sovereign Gold Bonds', 'cagr': '10-12%', 'icon': 'coins', 'risk': 'Low-Medium'},
@@ -386,99 +334,52 @@ def generate_ai_investment_suggestions(surplus_amount, risk_profile='BALANCED'):
             'EMERGENCY': {'pct': 15, 'title': 'High-Yield Liquid Emergency Fund', 'cagr': '6.5-7.5%', 'icon': 'shield-check', 'risk': 'Very Low'}
         }
         ai_summary = "Optimal balance between growth equities, steady commercial infrastructure dividends, and gold stability."
-
+    
     allocations = []
     for key, info in weights.items():
         allocated_amt = round((surplus * info['pct']) / 100.0, 2)
         allocations.append({
-            'asset_class': key,
-            'name': info['title'],
-            'percentage': info['pct'],
-            'amount': allocated_amt,
-            'expected_cagr': info['cagr'],
-            'risk_level': info['risk'],
-            'icon': info['icon']
+            'asset_class': key, 'name': info['title'], 'percentage': info['pct'],
+            'amount': allocated_amt, 'expected_cagr': info['cagr'], 'risk_level': info['risk'], 'icon': info['icon']
         })
-
-    # 10-Year compounding projection
-    # Assume blended CAGR ~ 12%
     blended_cagr = 0.12
     monthly_sip = surplus if surplus > 0 else 5000.0
     ten_year_corpus = monthly_sip * (((1 + blended_cagr/12)**(120) - 1) / (blended_cagr/12)) * (1 + blended_cagr/12)
-
     return {
-        'surplus_budget': round(surplus, 2),
-        'risk_profile': risk,
-        'strategy_name': strategy_name,
-        'ai_rationale': ai_summary,
-        'allocations': allocations,
-        'projected_10yr_wealth': round(ten_year_corpus, 2)
+        'surplus_budget': round(surplus, 2), 'risk_profile': risk, 'strategy_name': strategy_name,
+        'ai_rationale': ai_summary, 'allocations': allocations, 'projected_10yr_wealth': round(ten_year_corpus, 2)
     }
 
 def get_ai_smart_insights(df=None, monthly_budget=25000.0):
-    """Generate dynamic AI natural-language observations and actionable tips."""
     if df is None:
         df = get_expense_dataframe()
     if df.empty:
         return ["Add your initial expenses to activate AI intelligence."]
-
     insights = []
     now = datetime.now()
     cur_month_prefix = f"{now.year}-{str(now.month).zfill(2)}"
     df_cur = df[df['DATES'].dt.strftime('%Y-%m') == cur_month_prefix]
-    
     cur_spent = float(df_cur['PRICES'].sum()) if not df_cur.empty else 0.0
     surplus = max(0.0, monthly_budget - cur_spent)
     
-    # 1. Budget Pace Observation
     day_of_month = now.day
     days_in_month = 30
     month_progress_pct = (day_of_month / days_in_month) * 100
     spent_pct = (cur_spent / monthly_budget * 100) if monthly_budget > 0 else 0
-
     if spent_pct < month_progress_pct - 10:
-        insights.append({
-            'type': 'praise',
-            'title': 'High Savings Efficiency',
-            'icon': 'sparkles',
-            'text': f"You have used only {spent_pct:.0f}% of your budget while {month_progress_pct:.0f}% of the month has elapsed. Excellent fiscal discipline!"
-        })
+        insights.append({'type': 'praise', 'title': 'High Savings Efficiency', 'icon': 'sparkles', 'text': f"You have used only {spent_pct:.0f}% of your budget."})
     elif spent_pct > month_progress_pct + 15:
-        insights.append({
-            'type': 'warning',
-            'title': 'Pacing Alert',
-            'icon': 'alert-triangle',
-            'text': f"Burn rate is elevated. You've consumed {spent_pct:.0f}% of monthly allocation. Consider slowing discretionary spends."
-        })
+        insights.append({'type': 'warning', 'title': 'Pacing Alert', 'icon': 'alert-triangle', 'text': f"Burn rate is elevated at {spent_pct:.0f}%."})
     else:
-        insights.append({
-            'type': 'info',
-            'title': 'Steady Budget Cadence',
-            'icon': 'gauge',
-            'text': f"Spending trajectory is closely matching your timeline ({spent_pct:.0f}% spent vs {month_progress_pct:.0f}% of month passed)."
-        })
-
-    # 2. Investment Opportunity Tip
+        insights.append({'type': 'info', 'title': 'Steady Budget Cadence', 'icon': 'gauge', 'text': f"Spending trajectory closely matches timeline."})
+    
     if surplus > 2000:
-        insights.append({
-            'type': 'investment',
-            'title': 'Surplus Investment Signal',
-            'icon': 'trending-up',
-            'text': f"You currently have Rs {surplus:,.0f} in unspent budget! Channeling this into our AI Gold + Index strategy could yield ~13.2% CAGR."
-        })
-
-    # 3. Category Optimization Tip
+        insights.append({'type': 'investment', 'title': 'Surplus Investment Signal', 'icon': 'trending-up', 'text': f"You have Rs {surplus:,.0f} in unspent budget!"})
+    
     cat_series = df.groupby('EXPENSE_TYPE')['PRICES'].sum()
     if not cat_series.empty:
         top_cat = cat_series.idxmax()
         top_amt = cat_series.max()
         pct_of_total = (top_amt / df['PRICES'].sum()) * 100
-        insights.append({
-            'type': 'optimization',
-            'title': f'{top_cat.title()} Optimization',
-            'icon': 'lightbulb',
-            'text': f"{top_cat.title()} accounts for {pct_of_total:.0f}% of your expenses. Shaving just 10% here saves Rs {(top_amt * 0.1):,.0f} per month."
-        })
-
+        insights.append({'type': 'optimization', 'title': f'{top_cat.title()} Optimization', 'icon': 'lightbulb', 'text': f"{top_cat.title()} accounts for {pct_of_total:.0f}% of your expenses."})
     return insights
-
