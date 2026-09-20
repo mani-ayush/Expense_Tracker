@@ -4,6 +4,8 @@ A complete, modern, and user-friendly Expense Tracking application with rich fin
 
 Built with Python (Pandas, Matplotlib, Flask) and modern web technologies (Tailwind CSS, Chart.js, Lucide Icons), plus an included Native Desktop GUI (Tkinter).
 
+🌐 **[Access the Live Web Application Here]( https://budgetcraft.onrender.com)**
+
 ---
 
 ## 🌟 Key Features
@@ -37,28 +39,23 @@ Built with Python (Pandas, Matplotlib, Flask) and modern web technologies (Tailw
 
 ---
 
-## 🚀 How to Run
+## 🚀 How to Run Locally
 
 ### Option 1: Modern Web Dashboard (Recommended)
 Double-click `run_web.bat` OR run:
 ```bash
 python app.py
-```
 Then open your browser at:
-👉 **[http://127.0.0.1:5000](http://127.0.0.1:5000)**
+👉 http://127.0.0.1:5000
 
-### Option 2: Standalone Desktop GUI
-Double-click `run_desktop.bat` OR run:
-```bash
+Option 2: Standalone Desktop GUI
+Double-click run_desktop.bat OR run:
+
+Bash
 python gui_desktop.py
-```
 This launches a native Windows desktop application window with live interactive tables and embedded Matplotlib charts.
 
----
-
-## 📁 Project Structure
-
-```
+📁 Project Structure
 expense-tracker/
 ├── backend.py            # Core engine: Pandas calculations, Matplotlib JPEG export, auto-save
 ├── app.py                # Flask Web Server & REST API endpoints
@@ -72,4 +69,9 @@ expense-tracker/
 ├── run_web.bat           # 1-click launcher for Web UI
 ├── run_desktop.bat       # 1-click launcher for Desktop GUI
 └── README.md             # Documentation & guide
-```
+
+
+
+
+
+
